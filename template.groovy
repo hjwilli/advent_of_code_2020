@@ -10,6 +10,7 @@ def res2 = part2(input)
 println "res2: $res2"
 
 
+// ---
 def part1(def input) {
 
 }
@@ -19,7 +20,7 @@ def part2(def input) {
 }
 
 
-
+// ---inputs
 def getExample() {
 
 }

@@ -12,16 +12,11 @@ println "res2: $res2"
 
 def part1(def input) {
 	def validVals = input.rules.flatten() 
-	print validVals
+	//println validVals
 
 	def bad = []
 	input.tickets.each { t ->
-		//println "--"
-		def valid = true
-		t.each { v ->
-			if (!validVals.contains(v)) bad << v
-
-		}
+		t.each { v -> if (!validVals.contains(v)) bad << v }
 	}
 
 	return bad.sum()
@@ -32,7 +27,7 @@ def part2(def input) {
 
 	println "good: ${good.size()}"
 
-	//ruleIdx -> ticketIdx
+	//potential mappings of ruleIdx -> ticketIdx
 	def lookup = [:]
 	input.rules.eachWithIndex { r, idx ->
 		lookup[idx] = (0..(input.rules.size())-1).collect() 
@@ -43,7 +38,7 @@ def part2(def input) {
 	good.each { ticket ->
 		ticket.eachWithIndex { v, tixIdx ->
 			input.rules.eachWithIndex {r, rIdx ->
-				r = r.first()
+				r = r.first() //oops
 				if (!r.contains(v)) {
 					lookup[rIdx] = lookup[rIdx] - [tixIdx]
 				}
@@ -78,7 +73,7 @@ def solver(def lookup, def size) {
 	while (solution.size() != size && iteration < 100) {
 		lookup.each { r, t ->
 			if (t.size() == 1) {
-				solution[r] = t.first() //oops
+				solution[r] = t.first()
 				found << t.first()
 			}
 		}
@@ -114,9 +109,9 @@ def goodTix(def input) {
 
 def getExample() {
 	def rules = [
-	 [(1..3).collect() +  (5..7).collect()],
-	 [(6..11).collect() +  (33..44).collect()],
-	 [(13..40).collect() +  (45..50).collect()],
+		 [(1..3).collect() +  (5..7).collect()],
+		 [(6..11).collect() +  (33..44).collect()],
+		 [(13..40).collect() +  (45..50).collect()],
 	]
 
 	def tickets = [
@@ -134,9 +129,9 @@ def getExample() {
 
 def getExample2() {
 	def rules = [
-	 [(0..1).collect() +  (4..19).collect()],
-	 [(0..5).collect() +  (8..19).collect()],
-	 [(0..13).collect() +  (16..19).collect()],
+		[(0..1).collect() +  (4..19).collect()],
+		[(0..5).collect() +  (8..19).collect()],
+		[(0..13).collect() +  (16..19).collect()],
 	]
 
 	def tickets = [
@@ -153,26 +148,26 @@ def getExample2() {
 def getInput() {
 	def rules = [
 	[(43..237).collect() + (251..961).collect()],
-[(27..579).collect() + (586..953).collect()],
-[(31..587).collect() + (608..967).collect()],
-[(26..773).collect() + (784..973).collect()],
-[(41..532).collect() + (552..956).collect()],
-[(33..322).collect() + (333..972).collect()],
-[(30..165).collect() + (178..965).collect()],
-[(31..565).collect() + (571..968).collect()],
-[(36..453).collect() + (473..963).collect()],
-[(35..912).collect() + (924..951).collect()],
-[(39..376).collect() + (396..968).collect()],
-[(31..686).collect() + (697..974).collect()],
-[(28..78).collect() + (96..971).collect()],
-[(32..929).collect() + (943..955).collect()],
-[(40..885).collect() + (896..968).collect()],
-[(26..744).collect() + (765..967).collect()],
-[(46..721).collect() + (741..969).collect()],
-[(30..626).collect() + (641..965).collect()],
-[(48..488).collect() + (513..971).collect()],
-[(34..354).collect() + (361..973).collect()],
-]
+	[(27..579).collect() + (586..953).collect()],
+	[(31..587).collect() + (608..967).collect()],
+	[(26..773).collect() + (784..973).collect()],
+	[(41..532).collect() + (552..956).collect()],
+	[(33..322).collect() + (333..972).collect()],
+	[(30..165).collect() + (178..965).collect()],
+	[(31..565).collect() + (571..968).collect()],
+	[(36..453).collect() + (473..963).collect()],
+	[(35..912).collect() + (924..951).collect()],
+	[(39..376).collect() + (396..968).collect()],
+	[(31..686).collect() + (697..974).collect()],
+	[(28..78).collect() + (96..971).collect()],
+	[(32..929).collect() + (943..955).collect()],
+	[(40..885).collect() + (896..968).collect()],
+	[(26..744).collect() + (765..967).collect()],
+	[(46..721).collect() + (741..969).collect()],
+	[(30..626).collect() + (641..965).collect()],
+	[(48..488).collect() + (513..971).collect()],
+	[(34..354).collect() + (361..973).collect()],
+	]
 
 	def tickets = [
 [680,418,202,55,792,800,896,801,312,252,721,702,24,112,608,837,98,222,797,364],
@@ -416,7 +411,6 @@ def getInput() {
 [111,142,149,419,437,450,372,446,217,440,660,686,851,202,648,991,840,269,206,700],
 [303,822,146,474,112,75,712,321,712,626,720,220,334,63,947,645,624,467,812,446],
 [196,409,771,530,96,51,221,885,330,867,815,949,826,338,485,791,58,370,853,199],
-
 	]
 
 	def testTicket = [151,71,67,113,127,163,131,59,137,103,73,139,107,101,97,149,157,53,109,61]
