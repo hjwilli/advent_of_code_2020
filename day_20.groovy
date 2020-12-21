@@ -19,102 +19,8 @@ println "res2: $res2"
 
 
 // ---
-def buildImage(def tiles, def dim) {
-	
-	def pic = []
-	
-	for (tileRow in (0..(dim-1))) {
-		for (picRow in (1..8)) {
-			row = []
-			for (tileCol in (0..(dim-1))) {
-				def tile = tiles[getIdx(tileCol, tileRow, dim)]
-				row.addAll(tile.getPicRow(picRow))
-				//row.addAll(["|"])
-			}
-
-			pic << row
-		}
-	}
-
-	return pic
-}
-
-def parseTiles(def input) {
-	def tiles = []
-
-	def data = []
-	def id = 0
-	input.eachLine { line ->
-		if (line.trim().size() == 0) {
-			def t = new Tile(id.toLong(), data)
-			tiles << t
-			data = []
-		}
-		else if (line.contains("Tile")) {
-			def res = ( line =~ /Tile (\d+):/)
-			id = res.findAll().first()[1]
-		}
-		else {
-			data << line.trim()
-		}
-	}
-
-	return tiles
-}
-
 def part1(def input) {
 	def tiles = parseTiles(input)
-
-	println tiles.first().data
-	println tiles.first().data[0][9]
-
-	//return
-
-	/*
-	println "testing:"
-
-	def t = E
-
-	println tiles.first().getSide(t)
-	tiles.first().rot = 1
-	println tiles.first().getSide(t)
-	tiles.first().rot = 2
-	println tiles.first().getSide(t)
-	tiles.first().rot = 3
-	println tiles.first().getSide(t)
-	tiles.first().rot = 0
-	println tiles.first().getSide(t)
-
-
-	println "flip:"
-	tiles.first().flip = true
-	println tiles.first().getSide(t)
-	tiles.first().rot = 1
-	println tiles.first().getSide(t)
-	tiles.first().rot = 2
-	println tiles.first().getSide(t)
-	tiles.first().rot = 3
-	println tiles.first().getSide(t)
-
-	/*
-	tiles.first().rot = 1
-
-	println tiles.first().getSide(N)
-	println tiles.first().getSide(E)
-	println tiles.first().getSide(S)
-	println tiles.first().getSide(W)
-
-	tiles.first().flip = true
-	
-
-	println "==="
-	println tiles.first().getSide(N)
-	println tiles.first().getSide(E)
-	println tiles.first().getSide(S)
-	println tiles.first().getSide(W)
-
-	return false
-	*/
 
 	int dim = Math.sqrt(tiles.size()) // dim of picutre
 	println "tiles: ${tiles.size()} dim:${dim}"
@@ -139,11 +45,126 @@ def part1(def input) {
 
 def part2(def tiles) {
 	int dim = Math.sqrt( tiles.size() ) // dim of picutre
-	def pic = buildImage(tiles, dim)
 
-	return pic
+	def (picTile, monster) = buildImage(tiles, dim)
+
+	return findMarkMonsters(picTile, monster)
 }
 
+// parses the input to a list of Tile objects
+def parseTiles(def input) {
+	def tiles = []
+
+	def data = []
+	def id = 0
+	input.eachLine { line ->
+		if (line.trim().size() == 0) {
+			def t = new Tile(id.toLong(), data)
+			tiles << t
+			data = []
+		}
+		else if (line.contains("Tile")) {
+			def res = ( line =~ /Tile (\d+):/)
+			id = res.findAll().first()[1]
+		}
+		else {
+			data << line.trim()
+		}
+	}
+
+	return tiles
+}
+
+
+/*
+part 2
+build the final image from a list of correctly oriented tiles
+
+returns a Tile with the final image and the regex pattern to identify a monster in an image of this size
+*/
+def buildImage(def tiles, def dim) {
+	
+	def picArray = []
+	
+	for (tileRow in (0..(dim-1))) {
+		for (picRow in (1..8)) {
+			row = ""
+			for (tileCol in (0..(dim-1))) {
+				def tile = tiles[getIdx(tileCol, tileRow, dim)]
+				tile.getPicRow(picRow).each { c -> row += c}
+			}
+
+			picArray << row
+		}
+	}
+
+	def gap = picArray.first().size() - 20
+	//def monster = "..................#..{$gap}#....##....##....###.{$gap}.#..#..#..#..#..#...."
+	// group regex, because the '#' groups will be replaced with marker values and the other groups should not change
+	def monster = "(..................)(#)(..{$gap})(#)(....)(##)(....)(##)(....)(###)(.{$gap}.)(#)(..)(#)(..)(#)(..)(#)(..)(#)(..)(#)(....)"
+
+	return [new Tile(999, picArray, picArray.first().size()-1), monster]
+}
+
+/* Part 2
+Given a tile that represents the final image, and a regex string that represents a monster,
+returns the number of "#" that are not part of a monster
+
+Internally uses x/X instead of '#' so monster pattern can be matched in a case insensitive way
+and characters that are part of the pattern can be marked by capitialization 
+*/
+def findMarkMonsters(def tile, def monster) {
+	// regex group replacement; when we find a monster regex match, how to replace
+	def rep = '$1$2X$4X$6XX$8XX$10XXX$12X$14X$16X$18X$20X$22X$24'
+	monster = monster.replaceAll("#", "x")
+
+	println "searching for monster:"
+	println monster
+
+	//tile.printPic()
+
+	// orient the image till we see monsters
+	for (rot in (0..3)) {
+		for (flip in [false, true]) {
+			tile.flip = flip
+			tile.rot = rot
+
+			def testStr = tile.getFlattenedData().replaceAll("#", "x")
+
+			def matcher = ( testStr =~ /(?i)$monster/)
+			def count = matcher.findAll().size() 
+			if (count > 0) {
+				println "found at least $count monsters"
+				tile.printPic()
+
+				println testStr
+
+				// replace on monster at a time to allow for possible overlapping monsters
+				for (i in (0..testStr.size()-20)) {
+					testStr = testStr.replaceFirst(/(?i)^(.{$i})$monster/, rep)
+				}
+
+				println "== after:"
+				println testStr
+
+				return testStr.findAll("x").size()
+			}
+		}
+	}
+
+	return 0
+}
+
+
+/*
+part 1
+
+Recursive solver to get the location and orientation (rotation, reflection) of a list of tiles
+such that all the edges match
+
+returns a list of correctly oriented tiles
+the method getId(...) can be used to go from the x,y coordinates of a tile to it's list index 
+*/
 def picSolver(def remTiles, def dim, def pic = []) {
 	//println "ps \n\ttiles: ${remTiles*.id} \n\tpic: ${pic*.id} ${pic*.flip} ${pic*.rot}"
 
@@ -154,7 +175,7 @@ def picSolver(def remTiles, def dim, def pic = []) {
 				testTile.flip = flip
 				testTile.rot = rot
 
-				if (isValid (testTile, pic, dim)) {
+				if (isValidTilePlace (testTile, pic, dim)) {
 					def testPic = pic + testTile
 					
 					// success
@@ -163,10 +184,7 @@ def picSolver(def remTiles, def dim, def pic = []) {
 					}
 
 					def res = picSolver (remTiles - tile, dim, testPic)
-					if (res) { 
-						//println "success!"
-						return res 
-					}
+					if (res) return res // success!
 				}
 			}
 		}
@@ -174,7 +192,8 @@ def picSolver(def remTiles, def dim, def pic = []) {
 	return false
 }
 
-def isValid(tile, pic, dim) {
+// part 1
+def isValidTilePlace(tile, pic, dim) {
 	int x = (pic.size() ) % dim
 	int y = Math.floor((pic.size() ) / dim)
 	def idx
@@ -184,32 +203,15 @@ def isValid(tile, pic, dim) {
 	// check N
 	idx = getIdx(x, y-1, dim)
 	if (idx >= 0 ) {
-		//println "checking N:"
-		//println tile.getSide(N) 
-		//println pic[idx].getSide(S)
 		if (tile.getSide(N) != pic[idx].getSide(S) ) return false
 	}
 
-	/*
-	// check E
-	idx = getIdx(x+1, y, dim)
-	if (idx >= 0 ) {
-		if (tile.getSide(E) != pic[idx].getSide(W) ) return false
-	}
-
-	// check S
-	idx = getIdx(x, y+1, dim)
-	if (idx >= 0 ) {
-		if (tile.getSide(S) != pic[idx].getSide(N) ) return false
-	}
-   	*/
 	// check w
 	idx = getIdx(x-1, y, dim)
 	if (idx >= 0 ) {
 		if (tile.getSide(W) != pic[idx].getSide(E) ) return false
 	}
 	
-	//println "\t\t\ttrue"
 	return true
 }
 
@@ -224,116 +226,100 @@ def getIdx(x, y, dim) {
 @ToString
 class Tile {
 	def rawData
-	def data // y, x
+	def data 
+	def tileSize
 
-	def id
+	def id // tile id
 	def rot = 0 // rot to right: 0-3
 	def flip = false // horizontal flip
 
-	def sides = [] // N E S W
-
-	static int mask = 0b1111111111
 
 	static N = 0
 	static E = 1
 	static S = 2
 	static W = 3
 
-	def Tile(id, rawData) {
+	def Tile(id, rawData, tileSize = 9) {
 		this.id = id
 		this.rawData = rawData
+		this.tileSize = tileSize
 
 		this.data = [] + rawData*.toCharArray()
-
-
-		// N
-		def rawLine = rawData.first()
-		def line = rawLine.replaceAll("\\.", "0").replaceAll("#", "1")
-		int s = Eval.me("0b$line") & mask
-		sides[0] =  s
-		//println "==="
-		//println Integer.toBinaryString(s & mask)
-		//println Integer.toBinaryString(~s & mask)
-		
-		// E
-		rawLine = ""
-		rawData.each { rawLine = rawLine + it.toCharArray()[-1] }
-		line = rawLine.replaceAll("\\.", "0").replaceAll("#", "1")
-		s = Eval.me("0b$line") & mask
-		sides[1] = s
-
-		// S
-	 	rawLine = rawData.last()
-		line = rawLine.replaceAll("\\.", "0").replaceAll("#", "1")
-		s = Eval.me("0b$line") & mask
-		sides[2] =  s
-
-		// W
-		rawLine = ""
-		rawData.each { rawLine = rawLine + it.toCharArray()[-1] }
-		line = rawLine.replaceAll("\\.", "0").replaceAll("#", "1")
-		s = Eval.me("0b$line") & mask
-		sides[3] = s
 	}
 
-	def getSide2(def val) {
-		if (!flip) {
-			def idx = (val + rot) % 4
-			return sides[idx] & mask
-		}
-		else {
-			def idx = ( (-1 * val - rot ) + 8) % 4
-			return ~sides[idx] & mask
-		}
-	}
-
-	// get the edge
+	// part 1
+	// get the edge of the tile after any transforms are applied
+	// N/S is read from left to right
+	// E/W is read from top to bottom
 	def getSide(def val) {
+		def s = this.tileSize
 		def base = []
-		if (val == N) base = (0..9).collect{ [0, it] }
-		if (val == E) base = (0..9).collect{ [it, 9] }
-		if (val == S) base = (0..9).collect{ [9, it] }
-		if (val == W) base = (0..9).collect{ [it, 0] }
+		if (val == N) base = (0..s).collect{ [0, it] }
+		if (val == E) base = (0..s).collect{ [it, s] }
+		if (val == S) base = (0..s).collect{ [s, it] }
+		if (val == W) base = (0..s).collect{ [it, 0] }
 
 		return base.collect { 
-			//def (x, y) = this.transIdx(it[0], it[1]) 
-			//return this.data[x][y]
 			return this.getTransPixel(it)
 		}
 	}
 
+	// part 2
+	// get a row of the picture without the edge, after transforms are applied
 	def getPicRow(def r) {
-		def base = (1..8).collect { [r, it] }
+		def base = (1..(this.tileSize - 1)).collect { [r, it] }
 		return base.collect {
 			this.getTransPixel(it)
 		}
 	}
 
+	// part 2
+	// get the tile data (after image transforms) as a single string. 
+	def getFlattenedData() {
+		def str = ""
+
+		for (y in 0..(this.tileSize )) {
+			for (x in 0..(this.tileSize )) {
+				str += this.getTransPixel([y,x])
+			}
+		}
+
+		return str
+	}
+
+	// display the picture wrt transforms (includes edge)
+	def printPic() {
+		println "====="
+		println "rot: ${this.rot} flip:${this.flip}"
+		for (y in 0..(this.tileSize )) {
+			for (x in 0..(this.tileSize )) {
+				print this.getTransPixel([y,x])
+			}
+			print "\n"
+		}
+		println "====="
+	}
+
+	// get the pixel value after image transformations
 	def getTransPixel(def base) {
-		def (x, y) = this.transIdx(base[0], base[1]) 
+		def (x, y) = this.transCoords(base[0], base[1]) 
+
+		//println "transPixel $base -> $x, $y; r:${this.rot} f:${this.flip}"
 		return this.data[x][y] 
 	}
 
-
-	def transIdx(def x, def y) {
-		def l = 9
-
-		def hFlip = 1
-
-		if (this.flip) {
-			y = l - y
-		}
+	// get pixel coordinates after image transforms
+	def transCoords(def x, def y) {
+		def l = this.tileSize
 
 		// flip horizontaly then rotate
+		if (this.flip) { y = l - y}
+
 		if ( this.rot == 1 ) return [ (l - y), x ]
-
 		if ( this.rot == 2 ) return [ (l - x), l - y]
-
 		if ( this.rot == 3 ) return [ y, l - x]
-
 		return [ x, y ]
 	}
-
 }
 
 
